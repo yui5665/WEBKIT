@@ -15,14 +15,17 @@ use webkit2gtk::{
 };
 
 // * Personal deps
-use cairo;
+use cairo::{self, ImageSurface};
 use std::io::prelude::*;
 use std::path::Path;
 use std::{fs::File, ops::Deref};
 
-fn main() {
-    gtk::init().unwrap();
+// ! DEBUG UTILS
+use std::env;
 
+fn main() {
+    env::set_var("RUST_BACKTRACE", "1");
+    gtk::init().unwrap();
     let window = Window::new(WindowType::Toplevel);
     let context = WebContext::default().unwrap();
     #[cfg(feature = "v2_4")]
@@ -100,14 +103,21 @@ fn do_screenshot(webv: WebView) {
                     height: 800,
                     width: 600,
                 };
+                let old_surface = data.clone();
                 let mapped_img = data.map_to_image(Some(extents));
                 match mapped_img {
                     Ok(a) => {
                         let file = File::create("/tmp/screen.png");
                         match file {
                             Ok(mut f) => {
-                                a.deref().write_to_png(&mut f).expect("can't write to file");
-                                println!("Immagine scritta")
+                                println!("{:?}", a);
+                                // let mut vec = Vec::new();
+                                let img = ImageSurface::try_from(old_surface);
+                                match img {
+                                    Ok(img_to_write)=> {img_to_write.write_to_png(&mut f).expect("can't write to file");
+                                            println!("Resulting vector: {:?}", f);}
+                                    Err(_) => println!("nonono, error on img_write"),
+                                }
                             }
                             Err(e) => {
                                 print!("{:?}", e)
